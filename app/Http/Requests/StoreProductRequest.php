@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\MoneyRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProductRequest extends FormRequest
@@ -15,11 +16,11 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:150'],
-            'description' => ['required', 'string'],
-            'price' => ['required', 'numeric', 'min:0', 'decimal:0,2'],
+            'description' => ['required', 'string', 'max:10000'],
+            'price' => MoneyRules::amount(),
             'currency_id' => ['required', 'integer', 'exists:currencies,id'],
-            'tax_cost' => ['required', 'numeric', 'min:0', 'decimal:0,2'],
-            'manufacturing_cost' => ['required', 'numeric', 'min:0', 'decimal:0,2'],
+            'tax_cost' => MoneyRules::amount(),
+            'manufacturing_cost' => MoneyRules::amount(),
         ];
     }
 }

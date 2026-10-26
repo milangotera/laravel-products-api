@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\MoneyRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateProductRequest extends FormRequest
@@ -15,11 +16,16 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'required', 'string', 'max:150'],
-            'description' => ['sometimes', 'required', 'string'],
-            'price' => ['sometimes', 'required', 'numeric', 'min:0', 'decimal:0,2'],
-            'currency_id' => ['sometimes', 'required', 'integer', 'exists:currencies,id'],
-            'tax_cost' => ['sometimes', 'required', 'numeric', 'min:0', 'decimal:0,2'],
-            'manufacturing_cost' => ['sometimes', 'required', 'numeric', 'min:0', 'decimal:0,2'],
+            'description' => ['sometimes', 'required', 'string', 'max:10000'],
+            'price' => ['sometimes', ...MoneyRules::amount()],
+            'currency_id' => [
+                'sometimes',
+                'required',
+                'integer',
+                'exists:currencies,id',
+            ],
+            'tax_cost' => ['sometimes', ...MoneyRules::amount()],
+            'manufacturing_cost' => ['sometimes', ...MoneyRules::amount()],
         ];
     }
 }

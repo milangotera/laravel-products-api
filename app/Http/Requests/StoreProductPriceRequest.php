@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\MoneyRules;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreProductPriceRequest extends FormRequest
@@ -19,12 +20,7 @@ class StoreProductPriceRequest extends FormRequest
                 'integer',
                 'exists:currencies,id',
             ],
-            'price' => [
-                'required',
-                'numeric',
-                'min:0',
-                'decimal:0,2',
-            ],
+            'price' => MoneyRules::amount(),
         ];
     }
 }
