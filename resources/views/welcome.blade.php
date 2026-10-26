@@ -34,6 +34,7 @@
         .key { color: #a8c5ff; } .value { color: #a6e5ce; }
         .code-foot { color: #96a8c3; padding: 0 26px 22px; font-size: 11px; }
         footer { border-top: 1px solid #dde4ef; padding-top: 20px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: #738096; font-size: 12px; }
+        .author { display: flex; flex-direction: column; gap: 8px; }
         @media (max-width: 760px) { .layout { grid-template-columns: 1fr; margin: 32px 0; gap: 30px; } h1 { max-width: 520px; } pre { font-size: 12px; } }
     </style>
 </head>
@@ -73,7 +74,13 @@
                     <div class="code-foot">Ejemplo abreviado · application/json</div>
                 </div>
             </div>
-            <footer><span>Prueba técnica de backend</span><span>Laravel · Eloquent · OpenAPI 3.0</span></footer>
+            <footer>
+                <div class="author">
+                    <span>Desarrollado por Milán Gotera</span>
+                    <a href="mailto:milangotera@gmail.com">milangotera@gmail.com</a>
+                </div>
+                <a href="https://github.com/milangotera/laravel-products-api" target="_blank" rel="noopener noreferrer">Ver repositorio en GitHub ↗</a>
+            </footer>
         </section>
     </main>
 </body>
