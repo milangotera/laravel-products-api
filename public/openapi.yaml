@@ -1,0 +1,370 @@
+openapi: 3.0.3
+
+info:
+  title: API de productos
+  version: 1.0.0
+  description: |
+    API para gestionar productos y precios en distintas divisas.
+
+    Genera un token con:
+    php artisan api:token evaluador@example.com
+
+    Usa el botón Authorize e introduce el token.
+
+    Las tasas del seeder son ilustrativas.
+    Los precios adicionales se registran manualmente:
+    no se calculan automáticamente con exchange_rate.
+
+    Los costos e impuestos están expresados en la moneda base.
+    Al cambiar esa moneda deben enviarse nuevamente todos los importes.
+
+servers:
+  - url: /api
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Productos
+  - name: Precios
+
+paths:
+  /products:
+    get:
+      tags: [Productos]
+      summary: Listar productos
+      description: Devuelve productos paginados, 15 por página.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Lista paginada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  links:
+                    type: object
+                  meta:
+                    type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+    post:
+      tags: [Productos]
+      summary: Crear producto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProduct'
+      responses:
+        '201':
+          $ref: '#/components/responses/ProductResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /products/{product}:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+
+    get:
+      tags: [Productos]
+      summary: Consultar producto
+      description: Incluye la moneda base y los precios adicionales.
+      responses:
+        '200':
+          $ref: '#/components/responses/ProductResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+    put:
+      tags: [Productos]
+      summary: Actualizar producto
+      description: |
+        Acepta actualización parcial.
+        Para cambiar currency_id debes enviar price, tax_cost y
+        manufacturing_cost. La nueva moneda base no puede tener
+        un precio adicional registrado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/ProductResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+    delete:
+      tags: [Productos]
+      summary: Eliminar producto
+      description: También elimina sus precios adicionales.
+      responses:
+        '204':
+          description: Producto eliminado. Respuesta sin contenido.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /products/{product}/prices:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+
+    get:
+      tags: [Precios]
+      summary: Consultar precios adicionales
+      responses:
+        '200':
+          description: Precios del producto en otras divisas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductPrice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+    post:
+      tags: [Precios]
+      summary: Registrar precio en otra divisa
+      description: |
+        No permite repetir la moneda base ni registrar dos precios
+        adicionales para la misma divisa.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currency_id, price]
+              properties:
+                currency_id:
+                  type: integer
+                  example: 2
+                price:
+                  $ref: '#/components/schemas/Money'
+      responses:
+        '201':
+          description: Precio creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProductPrice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token de Laravel Sanctum emitido desde la consola.
+
+  parameters:
+    ProductId:
+      name: product
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Identificador del producto.
+
+  schemas:
+    Money:
+      type: string
+      pattern: '^[0-9]{1,16}(\.[0-9]{1,2})?$'
+      example: '25.50'
+      description: |
+        Importe no negativo, con hasta 16 dígitos enteros y dos decimales.
+        Se recomienda enviarlo como cadena para conservar la precisión.
+        La API también acepta números JSON válidos.
+
+    Currency:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: USD
+        symbol:
+          type: string
+          example: '$'
+
+    ProductInput:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 150
+          example: Teclado
+        description:
+          type: string
+          maxLength: 10000
+          example: Teclado para computadora
+        price:
+          $ref: '#/components/schemas/Money'
+        currency_id:
+          type: integer
+          example: 1
+        tax_cost:
+          $ref: '#/components/schemas/Money'
+        manufacturing_cost:
+          $ref: '#/components/schemas/Money'
+
+    CreateProduct:
+      allOf:
+        - $ref: '#/components/schemas/ProductInput'
+        - type: object
+          required:
+            - name
+            - description
+            - price
+            - currency_id
+            - tax_cost
+            - manufacturing_cost
+
+    Product:
+      allOf:
+        - $ref: '#/components/schemas/ProductInput'
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            currency:
+              $ref: '#/components/schemas/Currency'
+            prices:
+              type: array
+              description: Incluido al consultar o actualizar un producto.
+              items:
+                $ref: '#/components/schemas/ProductPrice'
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+
+    ProductPrice:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        product_id:
+          type: integer
+          example: 1
+        currency_id:
+          type: integer
+          example: 2
+        currency:
+          $ref: '#/components/schemas/Currency'
+        price:
+          $ref: '#/components/schemas/Money'
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+
+  responses:
+    ProductResponse:
+      description: Datos del producto
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                $ref: '#/components/schemas/Product'
+
+    Unauthorized:
+      description: Token ausente, inválido o vencido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Producto no encontrado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ValidationError:
+      description: Datos inválidos o conflicto entre divisas.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              errors:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+
+    TooManyRequests:
+      description: Límite de solicitudes superado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
