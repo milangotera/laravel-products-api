@@ -23,6 +23,12 @@
                 deepLinking: true,
                 persistAuthorization: false,
                 validatorUrl: null,
+                requestInterceptor: function (request) {
+                    delete request.headers.accept;
+                    request.headers['Accept'] = 'application/json';
+
+                    return request;
+                },
             });
         };
     </script>

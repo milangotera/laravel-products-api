@@ -2,6 +2,8 @@
 
 API REST desarrollada como prueba técnica de backend con Laravel. Permite administrar productos, sus costos y precios en diferentes divisas. Incluye una bienvenida en `/`, documentación interactiva Swagger UI en `/docs` y la especificación OpenAPI en `/openapi.yaml`.
 
+![Vista previa de la landing de Products API](docs/images/landing.png)
+
 ## Funcionalidades
 
 - Crear, listar, consultar, actualizar y eliminar productos.

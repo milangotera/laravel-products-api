@@ -59,6 +59,21 @@ class ProductApiTest extends TestCase
             ->assertUnauthorized();
     }
 
+    public function test_unauthenticated_requests_without_json_accept_return_401(): void
+    {
+        $this->get('/api/products', ['Accept' => '*/*'])
+            ->assertUnauthorized()
+            ->assertHeader('Content-Type', 'application/json')
+            ->assertJsonPath('message', 'Unauthenticated.');
+
+        $this->get('/api/products', [
+            'Accept' => '*/*',
+            'Authorization' => 'Bearer token-invalido',
+        ])
+            ->assertUnauthorized()
+            ->assertJsonPath('message', 'Unauthenticated.');
+    }
+
     public function test_product_can_be_created_listed_read_updated_and_deleted(): void
     {
         $this->authenticate();
